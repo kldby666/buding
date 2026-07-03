@@ -6,175 +6,454 @@
 <title>🐹 布丁相册</title>
 <style>
 :root {
-    --bg: #fff8f3;
+    --bg: #fdf6f0;
     --card: #fff;
     --accent: #ffd6c4;
     --text: #5c3d2e;
+    --pink: #ffb6c1;
+    --peach: #ffdab9;
+    --soft-shadow: 0 8px 30px rgba(255, 182, 150, 0.2);
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    margin: 0;
-    padding: 12px;
     background: var(--bg);
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     overflow-x: hidden;
+    min-height: 100vh;
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(255,182,193,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(255,218,185,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(255,214,196,0.15) 0%, transparent 50%);
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ========== 顶部导航 ========== */
+.top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    background: rgba(253, 246, 240, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,214,196,0.3);
+    transition: transform 0.3s;
+}
+
+.top-bar .title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.top-bar .title .emoji {
+    font-size: 1.3rem;
+    animation: bounce 2s ease infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+/* ========== Header 区域 ========== */
+.header-wrapper {
+    margin-top: 56px;
+    padding: 20px 14px 10px;
 }
 
 header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: linear-gradient(135deg, #ffe8dc, #ffd1c2);
-    padding: 14px;
-    border-radius: 18px;
-    margin-bottom: 14px;
+    background: linear-gradient(135deg, #fff5f0 0%, #ffe8dc 40%, #ffd1c2 100%);
+    padding: 28px 20px 24px;
+    border-radius: 24px;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--soft-shadow);
 }
+
+header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    background: rgba(255,182,193,0.2);
+    border-radius: 50%;
+}
+
+header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px; left: -20px;
+    width: 80px; height: 80px;
+    background: rgba(255,218,185,0.25);
+    border-radius: 50%;
+}
+
+.avatar-ring {
+    display: inline-block;
+    padding: 4px;
+    background: linear-gradient(135deg, #ffb6c1, #ffdab9, #ffd6c4);
+    border-radius: 50%;
+    margin-bottom: 12px;
+    box-shadow: 0 6px 20px rgba(255,182,150,0.4);
+    position: relative;
+    z-index: 1;
+}
+
 .avatar {
-    width: 80px;
-    height: 80px;
+    width: 88px; height: 88px;
     border-radius: 50%;
     object-fit: cover;
     border: 3px solid #fff;
-    box-shadow: 0 4px 12px rgba(255,180,150,.4);
-    margin-bottom: 8px;
+    display: block;
 }
-header h1 { margin: 0; font-size: 1.4rem; }
-header p { margin: 4px 0 0; font-size: 0.82rem; opacity: 0.75; }
 
+header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: 1px;
+    position: relative;
+    z-index: 1;
+}
+
+header .subtitle {
+    margin: 6px 0 0;
+    font-size: 0.82rem;
+    color: #a08070;
+    position: relative;
+    z-index: 1;
+}
+
+header .subtitle .dot {
+    display: inline-block;
+    width: 4px; height: 4px;
+    background: #d4a090;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin: 0 6px;
+}
+
+/* ========== 相册统计 ========== */
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 14px 0 6px;
+    padding: 0 14px;
+}
+
+.stat-item { text-align: center; }
+
+.stat-num {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.stat-label {
+    font-size: 0.72rem;
+    color: #b09a8a;
+    margin-top: 2px;
+}
+
+/* ========== 瀑布流相册 ========== */
 .gallery {
     column-count: 2;
     column-gap: 10px;
+    padding: 10px 12px 20px;
 }
 
 .photo-card {
     break-inside: avoid;
     background: var(--card);
-    border-radius: 16px;
+    border-radius: 18px;
     margin-bottom: 10px;
     overflow: hidden;
-    box-shadow: 0 6px 18px rgba(255,180,150,.25);
-    transition: transform .2s;
+    box-shadow: 0 4px 16px rgba(255,180,150,0.18);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+    cursor: pointer;
+    position: relative;
 }
-.photo-card:active { transform: scale(.97); }
 
+.photo-card:active {
+    transform: scale(0.96);
+}
+
+/* 骨架屏 */
+.photo-card .skeleton {
+    width: 100%;
+    min-height: 160px;
+    background: linear-gradient(135deg, #f5ebe3, #ede0d4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.photo-card .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.photo-card .skeleton .emoji-placeholder {
+    font-size: 2rem;
+    opacity: 0.3;
+    position: relative;
+    z-index: 1;
+}
+
+/* 统一图片尺寸：固定高度 + object-fit: cover，保持整齐 */
 .photo-card img {
     width: 100%;
-    height: 220px;
+    height: 200px;
     object-fit: cover;
     object-position: center;
     display: block;
-    background: #f3e8e0;
+    background: linear-gradient(135deg, #f5ebe3, #ede0d4);
+    transition: opacity 0.4s ease;
+    opacity: 0;
 }
 
-/* 灯箱 */
+.photo-card img.loaded {
+    opacity: 1;
+}
+
+/* ========== 灯箱 ========== */
 .lightbox {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,.95);
+    background: rgba(20, 10, 5, 0.96);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 999;
+    z-index: 9999;
     overflow: hidden;
     touch-action: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
+.lightbox.active {
+    opacity: 1;
+}
+
+/* 用 CSS translate 做滑动，只构建一次 DOM */
 .lightbox .slider {
     display: flex;
     height: 100%;
-    width: 100%;
-    transition: transform 0.3s ease-out;
+    width: 100vw;
     will-change: transform;
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .lightbox .slide {
-    min-width: 100%;
+    min-width: 100vw;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
 }
 
 .lightbox .slide img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    transition: transform 0.1s ease-out;
     will-change: transform;
     user-select: none;
     -webkit-user-drag: none;
+    border-radius: 8px;
+    transition: transform 0.15s ease-out;
 }
 
-.lightbox .close-btn {
+/* 顶部控制栏 */
+.lb-top-bar {
     position: absolute;
-    top: env(safe-area-inset-top, 16px);
-    right: 16px;
-    font-size: 32px;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(env(safe-area-inset-top, 12px) + 8px) 16px 12px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+    z-index: 10001;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.lb-top-bar.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.lb-counter {
     color: #fff;
-    background: rgba(0,0,0,0.3);
-    border: none;
-    width: 44px;
-    height: 44px;
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    padding: 5px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+}
+
+.lb-close {
+    width: 40px; height: 40px;
     border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    z-index: 1001;
+    transition: background 0.2s;
     line-height: 1;
 }
 
-.lightbox .counter {
-    position: absolute;
-    top: env(safe-area-inset-top, 16px);
-    left: 50%;
-    transform: translateX(-50%);
-    color: #fff;
-    font-size: 14px;
-    background: rgba(0,0,0,0.3);
-    padding: 6px 14px;
-    border-radius: 20px;
-    z-index: 1001;
+.lb-close:active {
+    background: rgba(255,255,255,0.3);
 }
 
-.hint-toast {
-    position: fixed;
-    bottom: 80px;
+/* 下拉关闭提示 */
+.pull-hint {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 12px) + 50px);
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    padding: 8px 18px;
-    border-radius: 20px;
+    color: rgba(255,255,255,0.6);
     font-size: 13px;
-    z-index: 1002;
+    z-index: 10000;
+    pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s;
-    pointer-events: none;
+    white-space: nowrap;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(6px);
+    padding: 4px 14px;
+    border-radius: 12px;
 }
-.hint-toast.show { opacity: 1; }
+
+.pull-hint.show { opacity: 1; }
+
+/* 底部提示 */
+.hint-toast {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 20px) + 60px);
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    z-index: 10002;
+    opacity: 0;
+    transition: opacity 0.4s, transform 0.4s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.hint-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* 首尾边界提示 */
+.edge-hint {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 28px;
+    color: rgba(255,255,255,0.15);
+    z-index: 10000;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.edge-hint.left { left: 12px; }
+.edge-hint.right { right: 12px; }
+
+/* ========== 底部留白 ========== */
+.bottom-spacer { height: 30px; }
 </style>
 </head>
 <body>
 
-<header>
-    <img class="avatar" src="https://static-mp-c8722c76-514e-412d-b415-11ef018f9936.next.bspapp.com/img/buding.jpg" alt="布丁仓鼠头像">
-    <h1>🐹 布丁相册</h1>
-    <p>点击照片查看完整原图 · 左右滑动切换 · 双指缩放</p>
-</header>
-
-<div class="gallery" id="gallery"></div>
-
-<div class="lightbox" id="lightbox">
-    <div class="slider" id="slider"></div>
-    <button class="close-btn" onclick="closeBox()">✕</button>
-    <div class="counter" id="counter"></div>
+<!-- 顶部固定栏 -->
+<div class="top-bar">
+    <div class="title">
+        <span class="emoji">🐹</span>
+        <span>布丁相册</span>
+    </div>
 </div>
 
-<div class="hint-toast" id="hintToast">点击图片任意位置关闭</div>
+<!-- Header -->
+<div class="header-wrapper">
+    <header>
+        <div class="avatar-ring">
+            <img class="avatar" src="https://static-mp-c8722c76-514e-412d-b415-11ef018f9936.next.bspapp.com/img/buding.jpg" alt="布丁仓鼠头像">
+        </div>
+        <h1>布丁 🐹</h1>
+        <p class="subtitle">一只可爱的仓鼠 <span class="dot"></span> 记录每一个萌萌瞬间</p>
+    </header>
+
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-num" id="photoCount">22</div>
+            <div class="stat-label">张照片</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num">🐹</div>
+            <div class="stat-label">小仓鼠</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num">❤️</div>
+            <div class="stat-label">满满的爱</div>
+        </div>
+    </div>
+</div>
+
+<!-- 相册 -->
+<div class="gallery" id="gallery"></div>
+<div class="bottom-spacer"></div>
+
+<!-- 灯箱 -->
+<div class="lightbox" id="lightbox">
+    <div class="lb-top-bar" id="lbTopBar">
+        <div class="lb-counter" id="counter"></div>
+        <button class="lb-close" onclick="closeBox()">✕</button>
+    </div>
+    <div class="pull-hint" id="pullHint">↓ 继续下拉关闭</div>
+    <div class="slider" id="slider"></div>
+    <div class="edge-hint left" id="edgeLeft">◀</div>
+    <div class="edge-hint right" id="edgeRight">▶</div>
+</div>
+
+<!-- 提示 -->
+<div class="hint-toast" id="hintToast">双击缩放 · 下拉关闭 · 左右滑动切换</div>
 
 <script>
 const photos = Array.from({length: 22}, (_, i) => 
@@ -186,11 +465,16 @@ const lightbox = document.getElementById("lightbox");
 const slider = document.getElementById("slider");
 const counter = document.getElementById("counter");
 const hintToast = document.getElementById("hintToast");
+const lbTopBar = document.getElementById("lbTopBar");
+const edgeLeft = document.getElementById("edgeLeft");
+const edgeRight = document.getElementById("edgeRight");
+const pullHint = document.getElementById("pullHint");
 
 let current = 0;
-let startX = 0;
-let startY = 0;
-let deltaX = 0;
+
+// 滑动相关
+let startX = 0, startY = 0;
+let deltaX = 0, deltaY = 0;
 let isSwiping = false;
 let swipeHandled = false;
 
@@ -199,13 +483,82 @@ let initialDistance = 0;
 let currentScale = 1;
 let isScaling = false;
 let lastScale = 1;
-let translateX = 0;
-let translateY = 0;
+let translateX = 0, translateY = 0;
 let lastTouchCenter = { x: 0, y: 0 };
 
-// 构建灯箱 DOM
+// 下拉关闭相关
+let isPullingDown = false;
+let pullStartY = 0;
+let pullDeltaY = 0;
+const PULL_CLOSE_THRESHOLD = 120;
+
+// 自动隐藏顶部栏
+let hideBarTimer;
+
+// ========== 懒加载（IntersectionObserver） ==========
+const observerOptions = {
+    root: null,
+    rootMargin: '400px 0px',
+    threshold: 0.01
+};
+
+const imageObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const card = entry.target;
+            const img = card.querySelector('img[data-src]');
+            if (img && img.dataset.src) {
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+            }
+            imageObserver.unobserve(card);
+        }
+    });
+}, observerOptions);
+
+// ========== 构建相册卡片 ==========
+photos.forEach((src, i) => {
+    const card = document.createElement("div");
+    card.className = "photo-card";
+
+    const skeleton = document.createElement("div");
+    skeleton.className = "skeleton";
+    skeleton.innerHTML = '<span class="emoji-placeholder">🐹</span>';
+    card.appendChild(skeleton);
+
+    const img = document.createElement("img");
+    img.dataset.src = src;
+    img.alt = `布丁照片 ${i + 1}`;
+    img.loading = "lazy";
+    card.appendChild(img);
+
+    img.onload = () => {
+        img.classList.add('loaded');
+        if (card.contains(skeleton)) {
+            skeleton.remove();
+        }
+    };
+
+    img.onerror = () => {
+        skeleton.innerHTML = '<span class="emoji-placeholder" style="opacity:0.4;">🖼️加载失败</span>';
+    };
+
+    card.addEventListener('click', () => {
+        if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+        }
+        openBox(i);
+    });
+
+    gallery.appendChild(card);
+    imageObserver.observe(card);
+});
+
+// ========== 灯箱 DOM（只构建一次） ==========
 function buildSlider() {
-    slider.innerHTML = '';
+    // 只在首次打开时构建，后续复用
+    if (slider.children.length > 0) return;
     photos.forEach((src, i) => {
         const slide = document.createElement('div');
         slide.className = 'slide';
@@ -234,59 +587,101 @@ function resetZoom() {
     }
 }
 
-function updateSliderPosition(animate = true) {
+function resetPullDown() {
+    isPullingDown = false;
+    pullDeltaY = 0;
+    pullHint.classList.remove('show');
+    lightbox.style.background = 'rgba(20, 10, 5, 0.96)';
+    slider.style.transform = `translate3d(-${current * 100}vw, 0, 0)`;
+    slider.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+}
+
+function updateEdgeHints() {
+    edgeLeft.style.opacity = current === 0 ? '1' : '0';
+    edgeRight.style.opacity = current === photos.length - 1 ? '1' : '0';
+}
+
+function updateSliderPosition(animate) {
     if (animate) {
-        slider.style.transition = 'transform 0.3s ease-out';
+        slider.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
     } else {
         slider.style.transition = 'none';
     }
-    slider.style.transform = `translateX(-${current * 100}%)`;
+    // 使用 translate3d 触发 GPU 加速，避免最后一张布局抖动
+    slider.style.transform = `translate3d(-${current * 100}vw, 0, 0)`;
     resetZoom();
     counter.textContent = `${current + 1} / ${photos.length}`;
+    updateEdgeHints();
 }
 
+function showTopBar() {
+    lbTopBar.classList.remove('hidden');
+    clearTimeout(hideBarTimer);
+    hideBarTimer = setTimeout(() => {
+        if (currentScale <= 1.05 && !isPullingDown) {
+            lbTopBar.classList.add('hidden');
+        }
+    }, 3000);
+}
+
+// ========== 打开/关闭灯箱 ==========
 function openBox(i) {
     current = i;
     buildSlider();
-    updateSliderPosition(false);
-    lightbox.style.display = 'flex';
+    // 打开时用 requestAnimationFrame 确保 DOM 已渲染再定位
+    requestAnimationFrame(() => {
+        slider.style.transition = 'none';
+        slider.style.transform = `translate3d(-${current * 100}vw, 0, 0)`;
+        requestAnimationFrame(() => {
+            lightbox.style.display = 'flex';
+            requestAnimationFrame(() => {
+                lightbox.classList.add('active');
+            });
+        });
+    });
     document.body.style.overflow = 'hidden';
-    
-    // 显示提示
+    resetZoom();
+    counter.textContent = `${current + 1} / ${photos.length}`;
+    updateEdgeHints();
+    showTopBar();
+
     hintToast.classList.add('show');
-    setTimeout(() => hintToast.classList.remove('show'), 2000);
+    setTimeout(() => hintToast.classList.remove('show'), 2500);
 }
 
 function closeBox() {
-    lightbox.style.display = 'none';
+    lightbox.classList.remove('active');
     document.body.style.overflow = '';
     resetZoom();
+    resetPullDown();
+    setTimeout(() => {
+        lightbox.style.display = 'none';
+    }, 300);
 }
 
 function prev() {
     if (current > 0) {
         current--;
-        updateSliderPosition();
+        updateSliderPosition(true);
+        showTopBar();
     }
-    // 第一张时不再往前，不做任何事
 }
 
 function next() {
     if (current < photos.length - 1) {
         current++;
-        updateSliderPosition();
+        updateSliderPosition(true);
+        showTopBar();
     }
-    // 最后一张时不再往后，不做任何事
 }
 
-// 获取两点间距离
+// ========== 获取两点间距离 ==========
 function getDistance(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-// 获取两点中心点
 function getCenter(touches) {
     return {
         x: (touches[0].clientX + touches[1].clientX) / 2,
@@ -294,23 +689,33 @@ function getCenter(touches) {
     };
 }
 
-// Touch 事件处理
+// ========== Touch 事件处理 ==========
 lightbox.addEventListener('touchstart', (e) => {
+    if (isScaling) return;
+
     if (e.touches.length === 2) {
-        // 双指开始
         e.preventDefault();
         isScaling = true;
         initialDistance = getDistance(e.touches);
         lastScale = currentScale;
         lastTouchCenter = getCenter(e.touches);
         swipeHandled = true;
-    } else if (e.touches.length === 1 && !isScaling) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
+        showTopBar();
+    } else if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
         deltaX = 0;
+        deltaY = 0;
         isSwiping = true;
         swipeHandled = false;
-        slider.style.transition = 'none';
+
+        if (currentScale > 1.05) {
+            // 缩放状态下的拖拽
+        } else {
+            slider.style.transition = 'none';
+        }
+        showTopBar();
     }
 }, { passive: false });
 
@@ -320,64 +725,113 @@ lightbox.addEventListener('touchmove', (e) => {
         const distance = getDistance(e.touches);
         const scale = (distance / initialDistance) * lastScale;
         currentScale = Math.min(Math.max(scale, 0.5), 5);
-        
+
         const center = getCenter(e.touches);
         const dx = center.x - lastTouchCenter.x;
         const dy = center.y - lastTouchCenter.y;
-        
+
         translateX += dx;
         translateY += dy;
-        
         lastTouchCenter = center;
-        
+
         const img = getImg();
         if (img) {
             img.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
         }
-    } else if (e.touches.length === 1 && isSwiping && !isScaling) {
-        deltaX = e.touches[0].clientX - startX;
-        // 只有在水平滑动足够大时才阻止默认
-        if (Math.abs(deltaX) > 10) {
-            e.preventDefault();
+        return;
+    }
+
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    deltaX = touch.clientX - startX;
+    deltaY = touch.clientY - startY;
+
+    // 缩放状态下：拖拽查看放大后的内容
+    if (currentScale > 1.05) {
+        e.preventDefault();
+        translateX += deltaX;
+        translateY += deltaY;
+        const img = getImg();
+        if (img) {
+            img.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
         }
-        // 当缩放为1时才允许滑动切换
-        if (currentScale <= 1.05) {
-            slider.style.transform = `translateX(calc(-${current * 100}% + ${deltaX}px))`;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        return;
+    }
+
+    // 下拉关闭逻辑
+    if (Math.abs(deltaY) > Math.abs(deltaX) && deltaY > 0 && !isPullingDown && currentScale <= 1.05) {
+        isPullingDown = true;
+        pullStartY = startY;
+    }
+
+    if (isPullingDown) {
+        e.preventDefault();
+        pullDeltaY = deltaY;
+
+        const progress = Math.min(pullDeltaY / PULL_CLOSE_THRESHOLD, 1);
+        const opacity = 0.96 - progress * 0.7;
+        lightbox.style.background = `rgba(20, 10, 5, ${Math.max(opacity, 0.2)})`;
+
+        const translateY = pullDeltaY * 0.6;
+        slider.style.transform = `translate3d(-${current * 100}vw, ${translateY}px, 0)`;
+
+        if (pullDeltaY > PULL_CLOSE_THRESHOLD * 0.4) {
+            pullHint.classList.add('show');
+        } else {
+            pullHint.classList.remove('show');
         }
+        return;
+    }
+
+    // 正常左右滑动
+    if (!isPullingDown && Math.abs(deltaX) > 5 && currentScale <= 1.05) {
+        e.preventDefault();
+        // 用 translate3d 保证 GPU 合成，不触发布局
+        slider.style.transform = `translate3d(calc(-${current * 100}vw + ${deltaX}px), 0, 0)`;
     }
 }, { passive: false });
 
 lightbox.addEventListener('touchend', (e) => {
+    if (isPullingDown && e.touches.length === 0) {
+        if (pullDeltaY >= PULL_CLOSE_THRESHOLD) {
+            closeBox();
+        } else {
+            slider.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            resetPullDown();
+        }
+        isPullingDown = false;
+        return;
+    }
+
     if (e.touches.length === 0) {
-        // 所有手指离开
         if (isScaling) {
             isScaling = false;
-            // 缩放结束，如果缩放很小就重置
             if (currentScale < 1.05) {
                 resetZoom();
             }
             return;
         }
-        
-        if (isSwiping && currentScale <= 1.05) {
-            slider.style.transition = 'transform 0.3s ease-out';
+
+        if (isSwiping && currentScale <= 1.05 && !isPullingDown) {
+            slider.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
             const threshold = 50;
             if (deltaX < -threshold) {
                 next();
             } else if (deltaX > threshold) {
                 prev();
             } else {
-                updateSliderPosition();
+                updateSliderPosition(true);
             }
         } else if (isSwiping && currentScale > 1.05) {
-            // 缩放状态下，松手后如果缩放很小就重置
             if (currentScale < 1.05) {
                 resetZoom();
             }
         }
         isSwiping = false;
     } else if (e.touches.length === 1 && isScaling) {
-        // 从双指变为单指，停止缩放
         isScaling = false;
         lastScale = currentScale;
         if (currentScale < 1.05) {
@@ -386,37 +840,67 @@ lightbox.addEventListener('touchend', (e) => {
     }
 });
 
-// 鼠标事件（PC端支持）
+// ========== 鼠标事件（PC端支持） ==========
 let mouseDown = false;
-let mouseStartX = 0;
-let mouseDeltaX = 0;
+let mouseStartX = 0, mouseStartY = 0;
+let mouseDeltaX = 0, mouseDeltaY = 0;
 
 lightbox.addEventListener('mousedown', (e) => {
-    if (currentScale > 1.05) return;
+    if (currentScale > 1.05) {
+        mouseDown = true;
+        mouseStartX = e.clientX;
+        mouseStartY = e.clientY;
+        return;
+    }
     mouseDown = true;
     mouseStartX = e.clientX;
+    mouseStartY = e.clientY;
     mouseDeltaX = 0;
+    mouseDeltaY = 0;
     slider.style.transition = 'none';
+    showTopBar();
 });
 
 lightbox.addEventListener('mousemove', (e) => {
-    if (!mouseDown || currentScale > 1.05) return;
+    if (!mouseDown) return;
+
     mouseDeltaX = e.clientX - mouseStartX;
-    slider.style.transform = `translateX(calc(-${current * 100}% + ${mouseDeltaX}px))`;
+    mouseDeltaY = e.clientY - mouseStartY;
+
+    if (currentScale > 1.05) {
+        translateX += mouseDeltaX;
+        translateY += mouseDeltaY;
+        const img = getImg();
+        if (img) {
+            img.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
+        }
+        mouseStartX = e.clientX;
+        mouseStartY = e.clientY;
+        return;
+    }
+
+    if (Math.abs(mouseDeltaX) > 5) {
+        slider.style.transform = `translate3d(calc(-${current * 100}vw + ${mouseDeltaX}px), 0, 0)`;
+    }
 });
 
 lightbox.addEventListener('mouseup', () => {
     if (!mouseDown) return;
     mouseDown = false;
-    if (currentScale > 1.05) return;
-    slider.style.transition = 'transform 0.3s ease-out';
+
+    if (currentScale > 1.05) {
+        if (currentScale < 1.05) resetZoom();
+        return;
+    }
+
+    slider.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
     const threshold = 50;
     if (mouseDeltaX < -threshold) {
         next();
     } else if (mouseDeltaX > threshold) {
         prev();
     } else {
-        updateSliderPosition();
+        updateSliderPosition(true);
     }
 });
 
@@ -424,40 +908,55 @@ lightbox.addEventListener('mouseleave', () => {
     if (mouseDown) {
         mouseDown = false;
         if (currentScale <= 1.05) {
-            updateSliderPosition();
+            updateSliderPosition(true);
         }
     }
 });
 
-// 鼠标滚轮缩放
+// ========== 鼠标滚轮缩放 ==========
 lightbox.addEventListener('wheel', (e) => {
     e.preventDefault();
     const img = getImg();
     if (!img) return;
-    
+
     const delta = e.deltaY > 0 ? -0.2 : 0.2;
     currentScale = Math.min(Math.max(currentScale + delta, 0.5), 5);
-    
+
     if (currentScale < 1.05) {
         resetZoom();
     } else {
         img.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
     }
+    showTopBar();
 }, { passive: false });
 
-// 点击关闭
+// ========== 双击缩放 ==========
+slider.addEventListener('dblclick', (e) => {
+    const img = getImg();
+    if (!img) return;
+
+    if (currentScale > 1.05) {
+        resetZoom();
+    } else {
+        currentScale = 2.5;
+        translateX = 0;
+        translateY = 0;
+        img.style.transform = `scale(${currentScale}) translate(0px, 0px)`;
+    }
+    showTopBar();
+});
+
+// ========== 单击关闭（未缩放时） ==========
 slider.addEventListener('click', (e) => {
-    // 如果正在缩放状态，不关闭
     if (currentScale > 1.05) {
         resetZoom();
         return;
     }
-    // 如果刚刚触发了滑动，不关闭
     if (Math.abs(deltaX) > 10 || Math.abs(mouseDeltaX) > 10) return;
     closeBox();
 });
 
-// 键盘支持
+// ========== 键盘支持 ==========
 document.addEventListener("keydown", e => {
     if (lightbox.style.display !== 'flex') return;
     if (e.key === "Escape") closeBox();
@@ -465,13 +964,8 @@ document.addEventListener("keydown", e => {
     if (e.key === "ArrowRight") next();
 });
 
-// 构建相册
-photos.forEach((src, i) => {
-    const card = document.createElement("div");
-    card.className = "photo-card";
-    card.innerHTML = `<img src="${src}" loading="lazy" onclick="openBox(${i})" alt="布丁照片 ${i+1}">`;
-    gallery.appendChild(card);
-});
+// 初始化边界提示
+updateEdgeHints();
 </script>
 </body>
 </html>

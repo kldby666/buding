@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<title>🐹 布丁相册</title>
+<style>
+:root {
+    --bg: #fff8f3;
+    --card: #fff;
+    --accent: #ffd6c4;
+    --text: #5c3d2e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 12px;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow-x: hidden;
+}
+
+header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #ffe8dc, #ffd1c2);
+    padding: 14px;
+    border-radius: 18px;
+    margin-bottom: 14px;
+    text-align: center;
+}
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 12px rgba(255,180,150,.4);
+    margin-bottom: 8px;
+}
+header h1 { margin: 0; font-size: 1.4rem; }
+header p { margin: 4px 0 0; font-size: 0.82rem; opacity: 0.75; }
+
+.gallery {
+    column-count: 2;
+    column-gap: 10px;
+}
+
+.photo-card {
+    break-inside: avoid;
+    background: var(--card);
+    border-radius: 16px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(255,180,150,.25);
+    transition: transform .2s;
+}
+.photo-card:active { transform: scale(.97); }
+
+.photo-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    background: #f3e8e0;
+}
+
+/* 灯箱 */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    overflow: hidden;
+    touch-action: none;
+}
+
+.lightbox .slider {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    transition: transform 0.3s ease-out;
+    will-change: transform;
+}
+
+.lightbox .slide {
+    min-width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox .slide img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.1s ease-out;
+    will-change: transform;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.lightbox .close-btn {
+    position: absolute;
+    top: env(safe-area-inset-top, 16px);
+    right: 16px;
+    font-size: 32px;
+    color: #fff;
+    background: rgba(0,0,0,0.3);
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1001;
+    line-height: 1;
+}
+
+.lightbox .counter {
+    position: absolute;
+    top: env(safe-area-inset-top, 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 14px;
+    background: rgba(0,0,0,0.3);
+    padding: 6px 14px;
+    border-radius: 20px;
+    z-index: 1001;
+}
+
+.hint-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    z-index: 1002;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+.hint-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+    <img class="avatar" src="https://static-mp-c8722c76-514e-412d-b415-11ef018f9936.next.bspapp.com/img/buding.jpg" alt="布丁仓鼠头像">
+    <h1>🐹 布丁相册</h1>
+    <p>点击照片查看完整原图 · 左右滑动切换 · 双指缩放</p>
+</header>
+
+<div class="gallery" id="gallery"></div>
+
+<div class="lightbox" id="lightbox">
+    <div class="slider" id="slider"></div>
+    <button class="close-btn" onclick="closeBox()">✕</button>
+    <div class="counter" id="counter"></div>
+</div>
+
+<div class="hint-toast" id="hintToast">点击图片任意位置关闭</div>
+
+<script>
+const photos = Array.from({length: 22}, (_, i) => 
+    `https://cdn.jsdelivr.net/gh/kldby666/piccdn/img/buding${i+1}.png`
+);
+
+const gallery = document.getElementById("gallery");
+const lightbox = document.getElementById("lightbox");
+const slider = document.getElementById("slider");
+const counter = document.getElementById("counter");
+const hintToast = document.getElementById("hintToast");
+
+let current = 0;
+let startX = 0;
+let startY = 0;
+let deltaX = 0;
+let isSwiping = false;
+let swipeHandled = false;
+
+// 缩放相关
+let initialDistance = 0;
+let currentScale = 1;
+let isScaling = false;
+let lastScale = 1;
+let translateX = 0;
+let translateY = 0;
+let lastTouchCenter = { x: 0, y: 0 };
+
+// 构建灯箱 DOM
+function buildSlider() {
+    slider.innerHTML = '';
+    photos.forEach((src, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'slide';
+        slide.dataset.index = i;
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = `布丁照片 ${i + 1}`;
+        img.draggable = false;
+        slide.appendChild(img);
+        slider.appendChild(slide);
+    });
+}
+
+function getImg() {
+    const slide = slider.children[current];
+    return slide ? slide.querySelector('img') : null;
+}
+
+function resetZoom() {
+    currentScale = 1;
+    translateX = 0;
+    translateY = 0;
+    const img = getImg();
+    if (img) {
+        img.style.transform = 'scale(1) translate(0px, 0px)';
+    }
+}
+
+function updateSliderPosition(animate = true) {
+    if (animate) {
+        slider.style.transition = 'transform 0.3s ease-out';
+    } else {
+        slider.style.transition = 'none';
+    }
+    slider.style.transform = `translateX(-${current * 100}%)`;
+    resetZoom();
+    counter.textContent = `${current + 1} / ${photos.length}`;
+}
+
+function openBox(i) {
+    current = i;
+    buildSlider();
+    updateSliderPosition(false);
+    lightbox.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // 显示提示
+    hintToast.classList.add('show');
+    setTimeout(() => hintToast.classList.remove('show'), 2000);
+}
+
+function closeBox() {
+    lightbox.style.display = 'none';
+    document.body.style.overflow = '';
+    resetZoom();
+}
+
+function prev() {
+    if (current > 0) {
+        current--;
+        updateSliderPosition();
+    }
+    // 第一张时不再往前，不做任何事
+}
+
+function next() {
+    if (current < photos.length - 1) {
+        current++;
+        updateSliderPosition();
+    }
+    // 最后一张时不再往后，不做任何事
+}
+
+// 获取两点间距离
+function getDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+// 获取两点中心点
+function getCenter(touches) {
+    return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+}
+
+// Touch 事件处理
+lightbox.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+        // 双指开始
+        e.preventDefault();
+        isScaling = true;
+        initialDistance = getDistance(e.touches);
+        lastScale = currentScale;
+        lastTouchCenter = getCenter(e.touches);
+        swipeHandled = true;
+    } else if (e.touches.length === 1 && !isScaling) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        deltaX = 0;
+        isSwiping = true;
+        swipeHandled = false;
+        slider.style.transition = 'none';
+    }
+}, { passive: false });
+
+lightbox.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && isScaling) {
+        e.preventDefault();
+        const distance = getDistance(e.touches);
+        const scale = (distance / initialDistance) * lastScale;
+        currentScale = Math.min(Math.max(scale, 0.5), 5);
+        
+        const center = getCenter(e.touches);
+        const dx = center.x - lastTouchCenter.x;
+        const dy = center.y - lastTouchCenter.y;
+        
+        translateX += dx;
+        translateY += dy;
+        
+        lastTouchCenter = center;
+        
+        const img = getImg();
+        if (img) {
+            img.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
+        }
+    } else if (e.touches.length === 1 && isSwiping && !isScaling) {
+        deltaX = e.touches[0].clientX - startX;
+        // 只有在水平滑动足够大时才阻止默认
+        if (Math.abs(deltaX) > 10) {
+            e.preventDefault();
+        }
+        // 当缩放为1时才允许滑动切换
+        if (currentScale <= 1.05) {
+            slider.style.transform = `translateX(calc(-${current * 100}% + ${deltaX}px))`;
+        }
+    }
+}, { passive: false });
+
+lightbox.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0) {
+        // 所有手指离开
+        if (isScaling) {
+            isScaling = false;
+            // 缩放结束，如果缩放很小就重置
+            if (currentScale < 1.05) {
+                resetZoom();
+            }
+            return;
+        }
+        
+        if (isSwiping && currentScale <= 1.05) {
+            slider.style.transition = 'transform 0.3s ease-out';
+            const threshold = 50;
+            if (deltaX < -threshold) {
+                next();
+            } else if (deltaX > threshold) {
+                prev();
+            } else {
+                updateSliderPosition();
+            }
+        } else if (isSwiping && currentScale > 1.05) {
+            // 缩放状态下，松手后如果缩放很小就重置
+            if (currentScale < 1.05) {
+                resetZoom();
+            }
+        }
+        isSwiping = false;
+    } else if (e.touches.length === 1 && isScaling) {
+        // 从双指变为单指，停止缩放
+        isScaling = false;
+        lastScale = currentScale;
+        if (currentScale < 1.05) {
+            resetZoom();
+        }
+    }
+});
+
+// 鼠标事件（PC端支持）
+let mouseDown = false;
+let mouseStartX = 0;
+let mouseDeltaX = 0;
+
+lightbox.addEventListener('mousedown', (e) => {
+    if (currentScale > 1.05) return;
+    mouseDown = true;
+    mouseStartX = e.clientX;
+    mouseDeltaX = 0;
+    slider.style.transition = 'none';
+});
+
+lightbox.addEventListener('mousemove', (e) => {
+    if (!mouseDown || currentScale > 1.05) return;
+    mouseDeltaX = e.clientX - mouseStartX;
+    slider.style.transform = `translateX(calc(-${current * 100}% + ${mouseDeltaX}px))`;
+});
+
+lightbox.addEventListener('mouseup', () => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    if (currentScale > 1.05) return;
+    slider.style.transition = 'transform 0.3s ease-out';
+    const threshold = 50;
+    if (mouseDeltaX < -threshold) {
+        next();
+    } else if (mouseDeltaX > threshold) {
+        prev();
+    } else {
+        updateSliderPosition();
+    }
+});
+
+lightbox.addEventListener('mouseleave', () => {
+    if (mouseDown) {
+        mouseDown = false;
+        if (currentScale <= 1.05) {
+            updateSliderPosition();
+        }
+    }
+});
+
+// 鼠标滚轮缩放
+lightbox.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const img = getImg();
+    if (!img) return;
+    
+    const delta = e.deltaY > 0 ? -0.2 : 0.2;
+    currentScale = Math.min(Math.max(currentScale + delta, 0.5), 5);
+    
+    if (currentScale < 1.05) {
+        resetZoom();
+    } else {
+        img.style.transform = `scale(${currentScale}) translate(${translateX / currentScale}px, ${translateY / currentScale}px)`;
+    }
+}, { passive: false });
+
+// 点击关闭
+slider.addEventListener('click', (e) => {
+    // 如果正在缩放状态，不关闭
+    if (currentScale > 1.05) {
+        resetZoom();
+        return;
+    }
+    // 如果刚刚触发了滑动，不关闭
+    if (Math.abs(deltaX) > 10 || Math.abs(mouseDeltaX) > 10) return;
+    closeBox();
+});
+
+// 键盘支持
+document.addEventListener("keydown", e => {
+    if (lightbox.style.display !== 'flex') return;
+    if (e.key === "Escape") closeBox();
+    if (e.key === "ArrowLeft") prev();
+    if (e.key === "ArrowRight") next();
+});
+
+// 构建相册
+photos.forEach((src, i) => {
+    const card = document.createElement("div");
+    card.className = "photo-card";
+    card.innerHTML = `<img src="${src}" loading="lazy" onclick="openBox(${i})" alt="布丁照片 ${i+1}">`;
+    gallery.appendChild(card);
+});
+</script>
+</body>
+</html>
